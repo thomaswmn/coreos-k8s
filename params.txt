@@ -1,0 +1,43 @@
+# parameters for systemd units
+# unit file contents and parameter concept roughly taken from https://opendev.org/openstack/magnum/src/branch/master/magnum/drivers/common/templates/kubernetes/fragments/configure-kubernetes-master.sh
+# defaults also taken from there
+
+
+common
+${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}
+${KUBE_TAG} 
+
+KUBE_LOGTOSTDERR="--logtostderr=true"
+KUBE_LOG_LEVEL="--v=3"
+KUBE_MASTER="--master=http://127.0.0.1:8080"
+
+
+apiserver
+# ohne TLS
+    KUBE_API_ADDRESS="--insecure-bind-address=0.0.0.0 --insecure-port=$KUBE_API_PORT"
+# mit TLS
+    KUBE_API_ADDRESS="--bind-address=0.0.0.0 --secure-port=$KUBE_API_PORT"
+KUBE_API_ADDRESS="--insecure-bind-address=127.0.0.1"
+KUBE_API_PORT="--port=8080"
+KUBE_ETCD_SERVERS="--etcd-servers=http://127.0.0.1:2379,http://127.0.0.1:4001"
+KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range=10.254.0.0/16"
+KUBE_ADMISSION_CONTROL="--admission-control=NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
+KUBE_API_ARGS=""
+KUBELET_PORT="--port=10250"
+
+controller-manager 
+$KUBE_CONTROLLER_MANAGER_ARGS
+
+scheduler
+$KUBE_SCHEDULER_ARGS
+
+kubelet
+$KUBELET_API_SERVER 
+$KUBELET_ADDRESS 
+KUBELET_PORT="--port=10250"
+$KUBELET_HOSTNAME 
+$KUBELET_ARGS
+
+proxy
+$KUBE_PROXY_ARGS
+
