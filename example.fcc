@@ -25,12 +25,43 @@ storage:
           gateway=10.0.2.1
           dns=1.1.1.1;8.8.8.8
           dns-search=redhat.com
+    - path: /etc/hosts
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+          ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+          10.0.2.1    registry.bootstrap.local
+          10.0.2.10   master.k8s.local registry.local
+    - path: /etc/docker/certs.d/registry.bootstrap.local:5000/ca.crt
+      mode: 0644
+      overwrite: true
+      contents:
+        source: {{CERT_REGISTRY_BOOTSTRAP}}
+    - path: /usr/local/bin/load-images.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        inline: |
+          #!/bin/bash
+          set -e
+          mkdir /mnt/images
+          mount /dev/vdb /mnt/images
+          for file in /mnt/images/podman/*; do
+            podman load --input $file
+          done
+          for file in /mnt/images/docker/*; do
+            docker load --input $file
+          done
+          umount /mnt/images
     - path: /etc/kubernetes/common
       mode: 0644
       overwrite: true
       contents:
         inline: |
-          CONTAINER_INFRA_PREFIX=k8s.gcr.io/
+          CONTAINER_INFRA_PREFIX=registry.local:5000/google-containers/
+          #CONTAINER_INFRA_PREFIX=k8s.gcr.io/
           KUBE_TAG=v1.18.2
           KUBE_LOGTOSTDERR="--logtostderr=true"
           KUBE_LOG_LEVEL="--v=3"
@@ -58,7 +89,6 @@ storage:
       contents:
         inline: |
           KUBE_SCHEDULER_ARGS=""
-
     - path: /etc/kubernetes/kubelet
       mode: 0644
       overwrite: true
@@ -68,9 +98,7 @@ storage:
           KUBELET_ADDRESS=""
           KUBELET_PORT="--port=10250"
           KUBELET_HOSTNAME=""
-          KUBELET_ARGS=""
-
-
+          KUBELET_ARGS="--cgroup-driver=systemd"
     - path: /etc/kubernetes/proxy
       mode: 0644
       overwrite: true
@@ -79,23 +107,38 @@ storage:
           KUBE_PROXY_ARGS=""
 systemd:
   units:
+    - name: load-images.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=load local podman and docker images
+        After=network-online.target docker.socket
+        Wants=network-online.target
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=/usr/local/bin/load-images.sh
+
+        [Install]
+        WantedBy=multi-user.target
     - name: etcd-member.service
       enabled: true
       contents: |
         [Unit]
         Description=Run single node etcd
-        After=network-online.target
+        After=network-online.target load-images.service
         Wants=network-online.target
 
         [Service]
         ExecStartPre=mkdir -p /var/lib/etcd
         ExecStartPre=-/bin/podman kill etcd
         ExecStartPre=-/bin/podman rm etcd
-        ExecStartPre=-/bin/podman pull quay.io/coreos/etcd
+        #ExecStartPre=-/bin/podman pull registry.local:5000/coreos/etcd:v3.3.20
         ExecStart=/bin/podman run --name etcd \
                 --volume /var/lib/etcd:/etcd-data:z \
                 --net=host \
-                quay.io/coreos/etcd:latest \
+                registry.local:5000/coreos/etcd:v3.3.20 \
                 /usr/local/bin/etcd \
                 --data-dir /etcd-data \
                 --name node1 \
@@ -114,6 +157,7 @@ systemd:
       contents: |
         [Unit]
         Description=kube-apiserver via Hyperkube
+        After=network-online.target load-images.service
         [Service]
         TimeoutStartSec=300
         EnvironmentFile=/etc/kubernetes/common
@@ -121,8 +165,16 @@ systemd:
         ExecStartPre=/usr/sbin/setenforce Permissive
         ExecStartPre=/bin/mkdir -p /etc/kubernetes/
         ExecStartPre=-/usr/bin/podman rm kube-apiserver
-        ExecStartPre=-/bin/bash -c '/usr/bin/podman pull ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube:${KUBE_TAG}'
-        ExecStartPre=-/bin/bash -c '/usr/bin/podman run --privileged --user root --net host --rm --volume /usr/local/bin:/host/usr/local/bin ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube:${KUBE_TAG} /bin/sh -c "cp /usr/local/bin/kubectl /host/usr/local/bin/kubectl"'
+        #ExecStartPre=-/bin/bash -c '/usr/bin/podman pull ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG}'
+        ExecStartPre=-/bin/bash -c '/usr/bin/podman run --name kubectl-copy \
+            --privileged \
+            --user root \
+            --net host \
+            --rm \
+            --volume /usr/local/bin:/host/usr/local/bin \
+            --entrypoint /bin/sh \
+            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
+            -c "cp /usr/local/bin/kubectl /host/usr/local/bin/kubectl"'
         ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-apiserver \
             --net host \
             --volume /etc/kubernetes:/etc/kubernetes:ro,z \
@@ -130,7 +182,7 @@ systemd:
             --volume /etc/ssl/certs:/etc/ssl/certs:ro \
             --volume /run:/run \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube:${KUBE_TAG} \
+            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
             kube-apiserver \
             $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_ETCD_SERVERS $KUBE_API_ADDRESS $KUBE_API_PORT $KUBELET_PORT $KUBE_SERVICE_ADDRESSES $KUBE_ADMISSION_CONTROL $KUBE_API_ARGS'
         ExecStop=-/usr/bin/podman stop kube-apiserver
@@ -144,6 +196,7 @@ systemd:
       contents: |
         [Unit]
         Description=kube-controller-manager via Hyperkube
+        After=network-online.target load-images.service
         [Service]
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/controller-manager
@@ -156,7 +209,7 @@ systemd:
             --volume /etc/ssl/certs:/etc/ssl/certs:ro \
             --volume /run:/run \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube:${KUBE_TAG} \
+            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
             kube-controller-manager \
             --secure-port=0 \
             $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_MASTER $KUBE_CONTROLLER_MANAGER_ARGS'
@@ -171,6 +224,7 @@ systemd:
       contents: |
         [Unit]
         Description=kube-scheduler via Hyperkube
+        After=network-online.target load-images.service
         [Service]
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/scheduler
@@ -183,7 +237,7 @@ systemd:
             --volume /etc/ssl/certs:/etc/ssl/certs:ro \
             --volume /run:/run \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube:${KUBE_TAG} \
+            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
             kube-scheduler \
             $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_MASTER $KUBE_SCHEDULER_ARGS'
         ExecStop=-/usr/bin/podman stop kube-scheduler
@@ -199,6 +253,7 @@ systemd:
       contents: |
         [Unit]
         Description=Kubelet via Hyperkube (System Container)
+        After=network-online.target load-images.service
         [Service]
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/kubelet
@@ -229,7 +284,7 @@ systemd:
             --volume /var/run:/var/run \
             --volume /var/run/lock:/var/run/lock:z \
             --volume /opt/cni/bin:/opt/cni/bin:z \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube:${KUBE_TAG} \
+            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
             kubelet \
             $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBELET_API_SERVER $KUBELET_ADDRESS $KUBELET_PORT $KUBELET_HOSTNAME $KUBELET_ARGS'
         ExecStop=-/usr/bin/podman stop kubelet
@@ -244,6 +299,7 @@ systemd:
       contents: |
         [Unit]
         Description=kube-proxy via Hyperkube
+        After=network-online.target load-images.service
         [Service]
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/proxy
@@ -260,7 +316,7 @@ systemd:
             --volume /sys/fs/cgroup/systemd:/sys/fs/cgroup/systemd \
             --volume /lib/modules:/lib/modules:ro \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube:${KUBE_TAG} \
+            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
             kube-proxy \
             $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_MASTER $KUBE_PROXY_ARGS'
         ExecStop=-/usr/bin/podman stop kube-proxy

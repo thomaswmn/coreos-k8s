@@ -1,0 +1,11 @@
+ca.crt
+ca.key
+certs
+crl
+index.txt
+index.txt.attr
+index.txt.attr.old
+index.txt.old
+newcerts
+serial
+serial.old

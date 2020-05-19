@@ -1,0 +1,4 @@
+curl -sSL https://git.io/get-mo -o mo
+chmod +x mo
+
+see also https://github.com/tests-always-included/mo
