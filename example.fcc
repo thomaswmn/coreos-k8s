@@ -98,7 +98,7 @@ storage:
           KUBELET_ADDRESS=""
           KUBELET_PORT="--port=10250"
           KUBELET_HOSTNAME=""
-          KUBELET_ARGS="--cgroup-driver=systemd --pod-infra-container-image=registry.local:5000/pause-amd64:3.1"
+          KUBELET_ARGS="--cgroup-driver=systemd --pod-infra-container-image=registry.local:5000/pause-amd64:3.1 --config=/etc/kubernetes/kubelet-config.yaml"
     - path: /etc/kubernetes/proxy
       mode: 0644
       overwrite: true
@@ -126,6 +126,16 @@ storage:
       overwrite: true
       contents:
         source: {{SERVICEACCOUNT_KEY_PRIVATE}}
+    - path: /etc/kubernetes/kubelet-config.yaml
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          kind: KubeletConfiguration
+          ClusterDNS: 10.99.1.2
+          ClusterDomain: cluster.local
+          PodManifestPath: /etc/kubernetes/manifests
 systemd:
   units:
     - name: zincati.service
