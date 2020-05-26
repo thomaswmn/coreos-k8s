@@ -75,7 +75,7 @@ storage:
             KUBE_API_PORT="--insecure-port=8080"
             KUBE_ETCD_SERVERS="--etcd-servers=http://127.0.0.1:2379"
             KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range=10.254.0.0/16"
-            KUBE_ADMISSION_CONTROL="--admission-control=NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
+            KUBE_ADMISSION_CONTROL="--admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota"
             KUBE_API_ARGS="--service-account-signing-key-file /etc/kubernetes/serviceaccount-key-private.pem --service-account-key-file /etc/kubernetes/serviceaccount-key-public.pem --service-account-issuer dummy"
             KUBE_API_CERT="--tls-private-key-file=/etc/kubernetes/apiserver.key --tls-cert-file=/etc/kubernetes/apiserver.crt --client-ca-file=/etc/kubernetes/ca.crt"
     - path: /etc/kubernetes/controller-manager

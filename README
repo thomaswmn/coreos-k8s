@@ -1,0 +1,4 @@
+
+TODOs
+* create service account private / public key pair on boot of master
+* admission controller SecurityContextDeny was disabled here, but might be better to re-enable it
