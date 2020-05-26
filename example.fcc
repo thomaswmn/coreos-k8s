@@ -76,13 +76,13 @@ storage:
             KUBE_ETCD_SERVERS="--etcd-servers=http://127.0.0.1:2379"
             KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range=10.254.0.0/16"
             KUBE_ADMISSION_CONTROL="--admission-control=NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
-            KUBE_API_ARGS=""
+            KUBE_API_ARGS="--service-account-signing-key-file /etc/kubernetes/serviceaccount-key-private.pem --service-account-key-file /etc/kubernetes/serviceaccount-key-public.pem --service-account-issuer dummy"
     - path: /etc/kubernetes/controller-manager
       mode: 0644
       overwrite: true
       contents:
         inline: |
-          KUBE_CONTROLLER_MANAGER_ARGS=""
+          KUBE_CONTROLLER_MANAGER_ARGS="--service-account-private-key-file /etc/kubernetes/serviceaccount-key-private.pem"
     - path: /etc/kubernetes/scheduler
       mode: 0644
       overwrite: true
@@ -105,6 +105,16 @@ storage:
       contents:
         inline: |
           KUBE_PROXY_ARGS=""
+    - path: /etc/kubernetes/serviceaccount-key-public.pem
+      mode: 0644
+      overwrite: true
+      contents:
+        source: {{SERVICEACCOUNT_KEY_PUBLIC}}
+    - path: /etc/kubernetes/serviceaccount-key-private.pem
+      mode: 0644
+      overwrite: true
+      contents:
+        source: {{SERVICEACCOUNT_KEY_PRIVATE}}
 systemd:
   units:
     - name: load-images.service
