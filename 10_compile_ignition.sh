@@ -14,6 +14,9 @@ export MO_FAIL_ON_UNSET=true
 export CERT_REGISTRY_BOOTSTRAP=$(dataurl_file tls/ca.crt)
 export SERVICEACCOUNT_KEY_PRIVATE=$(dataurl_file tls/k8s-service-accounts/private_unencrypted.pem)
 export SERVICEACCOUNT_KEY_PUBLIC=$(dataurl_file tls/k8s-service-accounts/public.pem)
+export K8S_CA_CRT=$(dataurl_file tls/k8s-api-server/ca.crt)
+export K8S_APISERVER_CRT=$(dataurl_file tls/k8s-api-server/certs/apiserver/crt)
+export K8S_APISERVER_KEY=$(dataurl_file tls/k8s-api-server/certs/apiserver/key)
 
 cat example.fcc \
   | mo \

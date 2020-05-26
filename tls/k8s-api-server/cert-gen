@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# note: Script uses -batch and -subj, instead of interactive prompts.
+set -e
+
+cd $(dirname $0)
+
+#if false; then
+rm -f ca.key ca.crt server.key server.csr server.crt client.key client.csr client.crt index.* serial*
+rm -rf certs crl newcerts
+
+
+echo "Creating example CA, server cert/key, and client cert/key..."
+
+# basic files/directories
+mkdir -p {certs,crl,newcerts}
+touch index.txt
+touch index.txt.attr
+echo 1000 > serial
+
+# CA private key (unencrypted)
+openssl genrsa -out ca.key 4096
+# Certificate Authority (self-signed certificate)
+openssl req -config openssl.conf -new -x509 -days 3650 -sha256 -key ca.key -extensions v3_ca -out ca.crt -subj "/CN=k8s-ca"
+
+#fi
+
+
+# End-entity certificates
+
+make_certificate() {
+  subject=$1
+  export SAN=$2
+  filename=$3
+  # Client private key (unencrypted)
+  openssl genrsa -out ${filename}.key 2048
+  # Signed client certificate signing request (CSR)
+  openssl req -config openssl.conf -new -sha256 -key ${filename}.key -out ${filename}.csr -subj "$subject"
+  # Certificate Authority signs CSR to grant a certificate
+  openssl ca -batch -config openssl.conf -extensions server_cert -days 365 -notext -md sha256 -in ${filename}.csr -out ${filename}.crt -cert ca.crt -keyfile ca.key
+  
+  mkdir certs/$filename
+  mv ${filename}.key certs/$filename/key
+  mv ${filename}.crt certs/$filename/crt
+}
+
+# set SAN with a DNS or IP for matchbox (e.g. export SAN=DNS.1:matchbox.example.com,IP.1:192.168.1.42)."
+make_certificate "/CN=kube-apiserver" "DNS:kubernetes,DNS:kubernetes.default,DNS:kubernetes.default.svc,DNS:kubernetes.default.svc.cluster,DNS:kubernetes.default.svc.cluster.local,DNS:master,IP:10.0.2.10,IP:10.254.0.1,IP:127.0.0.1" "apiserver"
+
+# Remove CSR's
+rm *.csr
+
+echo "*******************************************************************"
+echo "WARNING: Generated credentials are self-signed. Prefer your"
+echo "organization's PKI for production deployments."
+

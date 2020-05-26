@@ -77,12 +77,14 @@ storage:
             KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range=10.254.0.0/16"
             KUBE_ADMISSION_CONTROL="--admission-control=NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
             KUBE_API_ARGS="--service-account-signing-key-file /etc/kubernetes/serviceaccount-key-private.pem --service-account-key-file /etc/kubernetes/serviceaccount-key-public.pem --service-account-issuer dummy"
+            KUBE_API_CERT="--tls-private-key-file=/etc/kubernetes/apiserver.key --tls-cert-file=/etc/kubernetes/apiserver.crt --client-ca-file=/etc/kubernetes/ca.crt"
     - path: /etc/kubernetes/controller-manager
       mode: 0644
       overwrite: true
       contents:
         inline: |
           KUBE_CONTROLLER_MANAGER_ARGS="--service-account-private-key-file /etc/kubernetes/serviceaccount-key-private.pem"
+          KUBE_CONTROLLER_MANAGER_CERT="--client-ca-file=/etc/kubernetes/ca.crt --root-ca-file=/etc/kubernetes/ca.crt"
     - path: /etc/kubernetes/scheduler
       mode: 0644
       overwrite: true
@@ -99,6 +101,7 @@ storage:
           KUBELET_PORT="--port=10250"
           KUBELET_HOSTNAME=""
           KUBELET_ARGS="--cgroup-driver=systemd --pod-infra-container-image=registry.local:5000/pause-amd64:3.1 --config=/etc/kubernetes/kubelet-config.yaml"
+          KUBELET_CERT=""
     - path: /etc/kubernetes/proxy
       mode: 0644
       overwrite: true
@@ -126,6 +129,21 @@ storage:
       overwrite: true
       contents:
         source: {{SERVICEACCOUNT_KEY_PRIVATE}}
+    - path: /etc/kubernetes/ca.crt
+      mode: 0644
+      overwrite: true
+      contents:
+        source: {{K8S_CA_CRT}}
+    - path: /etc/kubernetes/apiserver.crt
+      mode: 0644
+      overwrite: true
+      contents:
+        source: {{K8S_APISERVER_CRT}}
+    - path: /etc/kubernetes/apiserver.key
+      mode: 0644
+      overwrite: true
+      contents:
+        source: {{K8S_APISERVER_KEY}}
     - path: /etc/kubernetes/kubelet-config.yaml
       mode: 0644
       overwrite: true
@@ -217,7 +235,7 @@ systemd:
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
             ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
             kube-apiserver \
-            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_ETCD_SERVERS $KUBE_API_ADDRESS $KUBE_API_PORT $KUBELET_PORT $KUBE_SERVICE_ADDRESSES $KUBE_ADMISSION_CONTROL $KUBE_API_ARGS'
+            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_ETCD_SERVERS $KUBE_API_CERT $KUBE_API_ADDRESS $KUBE_API_PORT $KUBELET_PORT $KUBE_SERVICE_ADDRESSES $KUBE_ADMISSION_CONTROL $KUBE_API_ARGS'
         ExecStop=-/usr/bin/podman stop kube-apiserver
         Delegate=yes
         Restart=always
@@ -319,7 +337,7 @@ systemd:
             --volume /opt/cni/bin:/opt/cni/bin:z \
             ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
             kubelet \
-            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBECONFIG $KUBELET_ADDRESS $KUBELET_PORT $KUBELET_HOSTNAME $KUBELET_ARGS'
+            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBELET_CERT $KUBECONFIG $KUBELET_ADDRESS $KUBELET_PORT $KUBELET_HOSTNAME $KUBELET_ARGS'
         ExecStop=-/usr/bin/podman stop kubelet
         Delegate=yes
         Restart=always
