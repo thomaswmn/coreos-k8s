@@ -98,9 +98,8 @@ storage:
         inline: |
           KUBECONFIG="--kubeconfig /etc/kubernetes/kubeconfig.yaml"
           KUBELET_ADDRESS=""
-          KUBELET_PORT="--port=10250"
           KUBELET_HOSTNAME=""
-          KUBELET_ARGS="--cgroup-driver=systemd --pod-infra-container-image=registry.local:5000/pause-amd64:3.1 --config=/etc/kubernetes/kubelet-config.yaml"
+          KUBELET_ARGS="--pod-infra-container-image=registry.local:5000/pause-amd64:3.1 --config=/etc/kubernetes/kubelet-config.yaml"
           KUBELET_CERT=""
     - path: /etc/kubernetes/proxy
       mode: 0644
@@ -151,9 +150,21 @@ storage:
         inline: |
           apiVersion: kubelet.config.k8s.io/v1beta1
           kind: KubeletConfiguration
-          ClusterDNS: 10.99.1.2
-          ClusterDomain: cluster.local
-          PodManifestPath: /etc/kubernetes/manifests
+          clusterDNS: ["10.99.1.2"]
+          clusterDomain: cluster.local
+          staticPodPath: /etc/kubernetes/manifests
+          port: 10250
+          cgroupDriver: systemd
+          # Restore default authentication and authorization modes from K8s < 1.9
+          authentication:
+            anonymous:
+              enabled: true # Defaults to false as of 1.10
+            webhook:
+              enabled: false # Deafults to true as of 1.10
+          authorization:
+            mode: AlwaysAllow # Deafults to webhook as of 1.10
+          readOnlyPort: 10255 # Used by heapster. Defaults to 0 (disabled) as of 1.10. Needed for metrics.
+
 systemd:
   units:
     - name: zincati.service
