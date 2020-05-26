@@ -94,7 +94,7 @@ storage:
       overwrite: true
       contents:
         inline: |
-          KUBELET_API_SERVER=""
+          KUBECONFIG="--kubeconfig /etc/kubernetes/kubeconfig.yaml"
           KUBELET_ADDRESS=""
           KUBELET_PORT="--port=10250"
           KUBELET_HOSTNAME=""
@@ -105,6 +105,17 @@ storage:
       contents:
         inline: |
           KUBE_PROXY_ARGS=""
+    - path: /etc/kubernetes/kubeconfig.yaml
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              name: coreos-cluster
+              server: http://127.0.0.1:8080
     - path: /etc/kubernetes/serviceaccount-key-public.pem
       mode: 0644
       overwrite: true
@@ -298,7 +309,7 @@ systemd:
             --volume /opt/cni/bin:/opt/cni/bin:z \
             ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
             kubelet \
-            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBELET_API_SERVER $KUBELET_ADDRESS $KUBELET_PORT $KUBELET_HOSTNAME $KUBELET_ARGS'
+            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBECONFIG $KUBELET_ADDRESS $KUBELET_PORT $KUBELET_HOSTNAME $KUBELET_ARGS'
         ExecStop=-/usr/bin/podman stop kubelet
         Delegate=yes
         Restart=always
