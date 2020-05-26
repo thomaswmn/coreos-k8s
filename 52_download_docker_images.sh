@@ -25,66 +25,40 @@ odockerimg_registry="docker.io/registry:latest"
 odockerimg_dhcpd="docker.io/networkboot/dhcpd"
 odockerimg_tftp="docker.io/jumanjiman/tftp-hpa"
 odockerimg_nginx="docker.io/library/nginx"
-#odockerimg_dashboard="k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1"
 odockerimg_dashboard="docker.io/kubernetesui/dashboard:v2.0.1"
 odockerimg_dashboard_metrics="docker.io/kubernetesui/metrics-scraper:v1.0.4"
 odockerimg_alpine="docker.io/alpine:latest"
 
 all_docker_images_o="$odockerimg_hyperkube $odockerimg_flannel $odockerimg_etcd $odockerimg_pause $odockerimg_registry $odockerimg_dashboard $odockerimg_dashboard_metrics $odockerimg_alpine"
-docker_images_persist=""
+
 
 mkdir -p blob/docker-images
 rm -f blob/docker-images/*
 
 for img in $all_docker_images_o; do
-  myimg=$(dockerimg_bootstrap $img)
   myimg_m=$(dockerimg_master $img)
-  echo "moving $img to $myimg and $myimg_m"
+  echo "moving $img to $myimg_m"
 
-  # pull - from local registry if available to save bandwidth
-  docker pull $myimg || true
   docker pull $img 
 
-  # re-tag the same image
-  docker tag $img $myimg 
   docker tag $img $myimg_m
 
-  # push to bootstrap registry - could be skipped if master registry is always usable
-  docker push $myimg  || echo "can not push $myimg"
-
-  #docker_images_persist="$docker_images_persist $myimg_m"
-  filename=$(echo $myimg_m | sed -re 's#[/:]#_#g')".tar.gz"
+  filename=$(echo $myimg_m | sed -re 's#[/:]#_#g')".tar"
   echo "persisting \"$myimg_m\" to \"$filename\""
   docker save $myimg_m \
-    | gzip --fast \
     > blob/docker-images/$filename
-    #| xz -T0 --compress --stdout -1 \
   chmod 644 blob/docker-images/$filename
 done
 
+mkdir -p blob/docker-images/images/{podman,docker}
 
-#echo "persisting docker images..."
-#mkdir -p blob/docker-images
-#rm -f blob/docker-images/*
-#docker save $docker_images_persist | \
-#  xz -T0 --compress --stdout -1 \
-#  > blob/docker-images/images.tar.xz
-#chmod 644 blob/docker-images/images.tar.xz
-#echo "done."
+mv blob/docker-images/registry.local_5000_coreos_etcd* blob/docker-images/images/podman
+mv blob/docker-images/registry.local_5000_google-containers_hyperkube* blob/docker-images/images/podman
 
-#echo "persisting rkt images..."
-#for img in $rkt_images_persist; do
-#  echo rkt image fetch --insecure-options=image,http docker://$img
-#  rkt image fetch --insecure-options=image,http docker://$img || echo "failed to fetch rkt image - continue with existing images"
-#  echo rkt image export $(dockerimg_rkt $img) ${blobdir}/http/docker/$(dockerimg_aci $img)
-#  rkt image export --overwrite $(dockerimg_rkt $img) ${blobdir}/http/docker/$(dockerimg_aci $img).tmp && \
-#    xz -T0 -7 ${blobdir}/http/docker/$(dockerimg_aci $img).tmp && \
-#    mv ${blobdir}/http/docker/$(dockerimg_aci $img).tmp.xz ${blobdir}/http/docker/$(dockerimg_aci $img)
-#done
-#echo "done."
+mv blob/docker-images/registry.local_5000_pause* blob/docker-images/images/docker
+mv blob/docker-images/registry.local_5000_registry* blob/docker-images/images/docker
+mv blob/docker-images/registry.local_5000_kubernetesui* blob/docker-images/images/docker
+mv blob/docker-images/registry.local_5000_alpine* blob/docker-images/images/docker
 
-#for img in $all_docker_images_o; do
-#  myimg=$(dockerimg_bootstrap $img)
-#  docker image rm $img || true
-#  docker image rm $myimg || true
-#done
+
+image-builder/build-image.sh
