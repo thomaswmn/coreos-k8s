@@ -274,7 +274,7 @@ systemd:
             ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
             kube-controller-manager \
             --secure-port=0 \
-            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_MASTER $KUBE_CONTROLLER_MANAGER_ARGS'
+            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_MASTER $KUBE_CONTROLLER_MANAGER_CERT $KUBE_CONTROLLER_MANAGER_ARGS'
         ExecStop=-/usr/bin/podman stop kube-controller-manager
         Delegate=yes
         Restart=always
