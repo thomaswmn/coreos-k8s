@@ -23,6 +23,8 @@ sudo cp blob/docker-images/registry.local_5000_google-containers_hyperkube* ./im
 sudo cp blob/docker-images/registry.local_5000_pause* ./images/docker
 sudo cp blob/docker-images/registry.local_5000_registry* ./images/docker
 sudo cp blob/docker-images/registry.local_5000_kubernetes-dashboard* ./images/docker
+sudo cp blob/docker-images/registry.local_5000_kubernetesui* ./images/docker
+sudo cp blob/docker-images/registry.local_5000_alpine* ./images/docker
 find ./images/ -ls
 sudo umount images
 

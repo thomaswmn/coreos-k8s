@@ -25,9 +25,12 @@ odockerimg_registry="docker.io/registry:latest"
 odockerimg_dhcpd="docker.io/networkboot/dhcpd"
 odockerimg_tftp="docker.io/jumanjiman/tftp-hpa"
 odockerimg_nginx="docker.io/library/nginx"
-odockerimg_dashboard="k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1"
+#odockerimg_dashboard="k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1"
+odockerimg_dashboard="docker.io/kubernetesui/dashboard:v2.0.1"
+odockerimg_dashboard_metrics="docker.io/kubernetesui/metrics-scraper:v1.0.4"
+odockerimg_alpine="docker.io/alpine:latest"
 
-all_docker_images_o="$odockerimg_hyperkube $odockerimg_flannel $odockerimg_etcd $odockerimg_pause $odockerimg_registry $odockerimg_dashboard"
+all_docker_images_o="$odockerimg_hyperkube $odockerimg_flannel $odockerimg_etcd $odockerimg_pause $odockerimg_registry $odockerimg_dashboard $odockerimg_dashboard_metrics $odockerimg_alpine"
 docker_images_persist=""
 
 mkdir -p blob/docker-images
