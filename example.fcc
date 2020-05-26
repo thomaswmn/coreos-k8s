@@ -117,6 +117,8 @@ storage:
         source: {{SERVICEACCOUNT_KEY_PRIVATE}}
 systemd:
   units:
+    - name: zincati.service
+      mask: true
     - name: load-images.service
       enabled: true
       contents: |
