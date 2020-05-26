@@ -1,5 +1,5 @@
-*** dashboard.yaml	2020-05-26 22:13:17.994529817 +0200
---- dashboard.yaml.edited	2020-05-26 22:12:33.795254161 +0200
+*** dashboard.yaml	2020-05-26 23:41:08.218045731 +0200
+--- dashboard.yaml.edited	2020-05-26 23:40:45.607098147 +0200
 ***************
 *** 37,48 ****
 --- 37,50 ----
@@ -17,3 +17,20 @@
   ---
   
   apiVersion: v1
+***************
+*** 192,203 ****
+--- 194,207 ----
+            ports:
+              - containerPort: 8443
+                protocol: TCP
+            args:
+              - --auto-generate-certificates
+              - --namespace=kubernetes-dashboard
++             - --enable-skip-login
++             - --disable-settings-authorizer        
+              # Uncomment the following line to manually specify Kubernetes API server Host
+              # If not specified, Dashboard will attempt to auto discover the API server and connect
+              # to it. Uncomment only if the default does not work.
+              # - --apiserver-host=http://my-address:port
+            volumeMounts:
+              - name: kubernetes-dashboard-certs
