@@ -98,7 +98,7 @@ storage:
           KUBELET_ADDRESS=""
           KUBELET_PORT="--port=10250"
           KUBELET_HOSTNAME=""
-          KUBELET_ARGS="--cgroup-driver=systemd"
+          KUBELET_ARGS="--cgroup-driver=systemd --pod-infra-container-image=registry.local:5000/pause-amd64:3.1"
     - path: /etc/kubernetes/proxy
       mode: 0644
       overwrite: true
