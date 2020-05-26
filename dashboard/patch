@@ -1,0 +1,19 @@
+*** dashboard.yaml	2020-05-26 22:13:17.994529817 +0200
+--- dashboard.yaml.edited	2020-05-26 22:12:33.795254161 +0200
+***************
+*** 37,48 ****
+--- 37,50 ----
+    name: kubernetes-dashboard
+    namespace: kubernetes-dashboard
+  spec:
+    ports:
+      - port: 443
+        targetPort: 8443
++       nodePort: 32767
++   type: NodePort
+    selector:
+      k8s-app: kubernetes-dashboard
+  
+  ---
+  
+  apiVersion: v1
