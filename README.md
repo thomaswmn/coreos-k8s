@@ -73,6 +73,8 @@ named by numbers. These numbers denote a loose grouping and ordering.
 * 52_download_docker_images.sh - download the required container images and 
   create the disk image that is used by the final system to load the images. 
   Makes use of the tooling in the directory image-builder.
+* 53_download_tools.sh - download mo (and maybe other tools), required for 
+  image preparation
 
 
 ## TODOs
@@ -93,6 +95,14 @@ Actual list of TODOs, where I collect things I plan to do
 
 ## External Tools Used
 
-This product includes software developed by contributors. The template 
-rendering engine "mo" is used to replace variables inside the configuration 
-file, before compiling the Ignition file.
+This product relies on many different packages of software developed by 
+contributors. 
+
+* CoreOS
+* Kubernetes, etcd, Kubernetes-Dashboard
+* Docker
+* Openssl
+* Alpine
+* Squashfs
+* The template rendering engine "mo" is used to replace variables inside the 
+  configuration file, before compiling the Ignition file.
