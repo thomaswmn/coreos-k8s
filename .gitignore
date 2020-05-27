@@ -2,3 +2,4 @@
 *.qcow2
 blob
 images.img
+bin/mo
