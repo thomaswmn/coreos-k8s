@@ -44,7 +44,9 @@ following paragraphs.
 
 ### Directories
 * bin - for tools required to prepare the environment
-* dashboard - contains deployment for a Kubernetes dashboard
+* deployments-builder - environment to create deployment yaml files (e.g. from
+  templates)
+* deployments - deployment yaml files, generated from deployments-builder
 * image-builder - resources to create the disk image containing all container
   images required by the setup
 * tls - to manage various keys and certificates required for the system
