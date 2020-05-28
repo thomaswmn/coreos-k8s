@@ -1,5 +1,9 @@
 #!/bin/bash
 #set -x
+set -e
+
+mkdir -p $(dirname $0)/blob
+cd $(dirname $0)/blob
 
 wget https://builds.coreos.fedoraproject.org/streams/stable.json
 url=$(cat stable.json | jq --raw-output '.architectures.x86_64.artifacts.qemu.formats."qcow2.xz".disk.location')
