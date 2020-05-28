@@ -164,6 +164,16 @@ storage:
           authorization:
             mode: AlwaysAllow # Deafults to webhook as of 1.10
           readOnlyPort: 10255 # Used by heapster. Defaults to 0 (disabled) as of 1.10. Needed for metrics.
+    - path: /usr/local/bin/push-local-images.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        inline: |
+          #!/bin/bash
+          set -e
+          docker image ls | while read image tag others ; do 
+            docker push $image:$tag
+          done
   links:
     - path: /etc/docker/certs.d/registry.bootstrap.local:5000
       target: /etc/docker/certs.d/registry.local:5000
