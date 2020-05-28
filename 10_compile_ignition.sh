@@ -11,7 +11,7 @@ function dataurl_file() {
 }
 
 export MO_FAIL_ON_UNSET=true
-export CERT_REGISTRY_BOOTSTRAP=$(dataurl_file tls/ca.crt)
+export CA_REGISTRY=$(dataurl_file tls/ca.crt)
 export SERVICEACCOUNT_KEY_PRIVATE=$(dataurl_file tls/k8s-service-accounts/private_unencrypted.pem)
 export SERVICEACCOUNT_KEY_PUBLIC=$(dataurl_file tls/k8s-service-accounts/public.pem)
 export K8S_CA_CRT=$(dataurl_file tls/k8s-api-server/ca.crt)

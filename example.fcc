@@ -34,11 +34,11 @@ storage:
           ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
           10.0.2.1    registry.bootstrap.local
           10.0.2.10   master.k8s.local registry.local
-    - path: /etc/docker/certs.d/registry.bootstrap.local:5000/ca.crt
+    - path: /etc/docker/certs.d/registry.local:5000/ca.crt
       mode: 0644
       overwrite: true
       contents:
-        source: {{CERT_REGISTRY_BOOTSTRAP}}
+        source: {{CA_REGISTRY}}
     - path: /usr/local/bin/load-images.sh
       mode: 0755
       overwrite: true
@@ -164,6 +164,11 @@ storage:
           authorization:
             mode: AlwaysAllow # Deafults to webhook as of 1.10
           readOnlyPort: 10255 # Used by heapster. Defaults to 0 (disabled) as of 1.10. Needed for metrics.
+  links:
+    - path: /etc/docker/certs.d/registry.bootstrap.local:5000
+      target: /etc/docker/certs.d/registry.local:5000
+      overwrite: true
+      hard: false
 
 systemd:
   units:
