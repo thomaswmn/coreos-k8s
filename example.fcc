@@ -164,6 +164,25 @@ storage:
           authorization:
             mode: AlwaysAllow # Deafults to webhook as of 1.10
           readOnlyPort: 10255 # Used by heapster. Defaults to 0 (disabled) as of 1.10. Needed for metrics.
+    - path: /etc/kubernetes/deployments.tar.xz
+      mode: 0644
+      overwrite: true
+      contents:
+        source: {{K8S_DEPLOYMENTS_TAR_XZ}}
+    - path: /usr/local/bin/apply-deployments.sh
+      mode: 0755
+      overwrite: true
+      contents:
+        inline: |
+          #!/bin/bash
+          set -e
+          if [ ! -d /etc/kubernetes/deployments ]; then
+            mkdir -p /etc/kubernetes/deployments
+            cd /etc/kubernetes/deployments
+            tar -xJf ../deployments.tar.xz
+          fi
+          export KUBERNETES_MASTER=http://127.0.0.1:8080
+          kubectl apply -f /etc/kubernetes/deployments
     - path: /usr/local/bin/push-local-images.sh
       mode: 0755
       overwrite: true
@@ -199,6 +218,21 @@ systemd:
 
         [Install]
         WantedBy=multi-user.target
+    - name: load-k8s-default.service
+      enabled: true
+      contents: |
+        [Unit]
+        Requires=kubelet.service
+        After=kubelet.service
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=/bin/bash -c '( while sleep 5; do /usr/local/bin/apply-deployments.sh && exit; done ) &'
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: etcd-member.service
       enabled: true
       contents: |
