@@ -78,6 +78,12 @@ named by numbers. These numbers denote a loose grouping and ordering.
 * 53_download_tools.sh - download mo (and maybe other tools), required for 
   image preparation
 
+### Certificates
+
+Scripts for certificate generation are stored below tls/. These have to be
+executed before the ignition file can be compiled. For further information,
+check the scripts used to generate the certificates, and the places where
+they are referenced.
 
 ## TODOs
 This is an experimental test setup, mostly intended to check whether this is 
