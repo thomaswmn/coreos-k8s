@@ -31,6 +31,10 @@ make_certificate() {
   subject=$1
   export SAN=$2
   filename=$3
+
+  # skip if existing
+  test -d certs/$filename && return
+
   # Client private key (unencrypted)
   openssl genrsa -out ${filename}.key 2048
   # Signed client certificate signing request (CSR)
@@ -45,6 +49,7 @@ make_certificate() {
 
 # set SAN with a DNS or IP for matchbox (e.g. export SAN=DNS.1:matchbox.example.com,IP.1:192.168.1.42)."
 make_certificate "/CN=bootstrap-registry" "DNS:registry.bootstrap.local,IP:10.0.2.1" "bootstrap-registry"
+make_certificate "/CN=registry" "DNS:registry.local,IP:10.0.2.10" "registry"
 
 # Remove CSR's
 rm *.csr
