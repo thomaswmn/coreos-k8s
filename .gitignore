@@ -3,3 +3,5 @@
 blob
 images.img
 bin/mo
+deployments/dashboard.yaml
+deployments/registry.yaml
