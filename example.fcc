@@ -118,16 +118,6 @@ storage:
           - cluster:
               name: coreos-cluster
               server: http://127.0.0.1:8080
-    - path: /etc/kubernetes/serviceaccount-key-public.pem
-      mode: 0644
-      overwrite: true
-      contents:
-        source: {{SERVICEACCOUNT_KEY_PUBLIC}}
-    - path: /etc/kubernetes/serviceaccount-key-private.pem
-      mode: 0644
-      overwrite: true
-      contents:
-        source: {{SERVICEACCOUNT_KEY_PRIVATE}}
     - path: /etc/kubernetes/ca.crt
       mode: 0644
       overwrite: true
@@ -210,6 +200,19 @@ systemd:
   units:
     - name: zincati.service
       mask: true
+    - name: generate-k8s-sa-keys.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=generate keys for k8s service accounts
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=/bin/bash -c 'openssl genrsa -passout pass:dummy -aes256 -out /tmp/private.pem 2048 && openssl rsa -in /tmp/private.pem -passin pass:dummy -outform PEM -pubout -out /etc/kubernetes/serviceaccount-key-public.pem && openssl rsa -in /tmp/private.pem -passin pass:dummy -out /etc/kubernetes/serviceaccount-key-private.pem -outform PEM && rm /tmp/private.pem'
+
+        [Install]
+        WantedBy=multi-user.target
     - name: load-images.service
       enabled: true
       contents: |
@@ -275,7 +278,7 @@ systemd:
       contents: |
         [Unit]
         Description=kube-apiserver via Hyperkube
-        After=network-online.target load-images.service
+        After=network-online.target load-images.service generate-k8s-sa-keys.service
         [Service]
         TimeoutStartSec=300
         EnvironmentFile=/etc/kubernetes/common
@@ -314,7 +317,7 @@ systemd:
       contents: |
         [Unit]
         Description=kube-controller-manager via Hyperkube
-        After=network-online.target load-images.service
+        After=network-online.target load-images.service generate-k8s-sa-keys.service
         [Service]
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/controller-manager
