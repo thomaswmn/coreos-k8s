@@ -193,6 +193,13 @@ storage:
           docker image ls | grep -v REPOSITORY | while read image tag others ; do
             docker push $image:$tag
           done
+    - path: /etc/fedora-coreos-pinger/config.d/99-disable-reporting.toml
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          [reporting]
+          enabled = false
   links:
     - path: /etc/docker/certs.d/registry.bootstrap.local:5000
       target: /etc/docker/certs.d/registry.local:5000
