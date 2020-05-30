@@ -65,8 +65,6 @@ named by numbers. These numbers denote a loose grouping and ordering.
 ### Detailed Explanation of Scripts
 * 01_start-docker.sh - start the systemd docker.service on my dev computer
 * 02_init-bridge.sh - initialize the network on my dev computer
-* 03_masquerade.sh - initialize NAT such that the test VM can access other 
-  networks. Currently unused.
 
 * 10_compile_ignition.sh - take the input ".fcc" file, some input from the tls
   directory, and compile the Ignition configuration file that is finally loaded
