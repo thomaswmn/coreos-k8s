@@ -94,8 +94,6 @@ feasible. There was no intention yet to make the system stable, reliable,
 secure, or similar.
 
 Actual list of TODOs, where I collect things I plan to do
-* create service account private / public key pair on boot of master
-* create other CA and keys on boot of master
 * admission controller SecurityContextDeny is disabled here, but might be 
   better to re-enable it
 * define a clear concept which configs to hard-code in the fcc file and which 
