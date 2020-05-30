@@ -34,58 +34,6 @@ storage:
           ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
           10.0.2.1    registry.bootstrap.local
           10.0.2.10   master.k8s.local registry.local
-    - path: /etc/kubernetes/common
-      mode: 0644
-      overwrite: true
-      contents:
-        inline: |
-          CONTAINER_INFRA_PREFIX=registry.local:5000/google-containers/
-          #CONTAINER_INFRA_PREFIX=k8s.gcr.io/
-          KUBE_TAG=v1.18.2
-          KUBE_LOGTOSTDERR="--logtostderr=true"
-          KUBE_LOG_LEVEL="--v=3"
-          KUBE_MASTER="--master=http://127.0.0.1:8080"
-    - path: /etc/kubernetes/apiserver
-      mode: 0644
-      overwrite: true
-      contents:
-        inline: |
-            KUBE_API_ADDRESS="--insecure-bind-address=0.0.0.0"
-            KUBE_API_PORT="--insecure-port=8080"
-            KUBE_ETCD_SERVERS="--etcd-servers=http://127.0.0.1:2379"
-            KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range=10.254.0.0/16"
-            KUBE_ADMISSION_CONTROL="--admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota"
-            KUBE_API_ARGS="--service-account-signing-key-file /etc/kubernetes/serviceaccount-key-private.pem --service-account-key-file /etc/kubernetes/serviceaccount-key-public.pem --service-account-issuer dummy"
-            KUBE_API_CERT="--tls-private-key-file=/etc/kubernetes/apiserver.key --tls-cert-file=/etc/kubernetes/apiserver.crt --client-ca-file=/etc/kubernetes/ca.crt"
-    - path: /etc/kubernetes/controller-manager
-      mode: 0644
-      overwrite: true
-      contents:
-        inline: |
-          KUBE_CONTROLLER_MANAGER_ARGS="--service-account-private-key-file /etc/kubernetes/serviceaccount-key-private.pem"
-          KUBE_CONTROLLER_MANAGER_CERT="--client-ca-file=/etc/kubernetes/ca.crt --root-ca-file=/etc/kubernetes/ca.crt"
-    - path: /etc/kubernetes/scheduler
-      mode: 0644
-      overwrite: true
-      contents:
-        inline: |
-          KUBE_SCHEDULER_ARGS=""
-    - path: /etc/kubernetes/kubelet
-      mode: 0644
-      overwrite: true
-      contents:
-        inline: |
-          KUBECONFIG="--kubeconfig /etc/kubernetes/kubeconfig.yaml"
-          KUBELET_ADDRESS=""
-          KUBELET_HOSTNAME=""
-          KUBELET_ARGS="--pod-infra-container-image=registry.local:5000/pause-amd64:3.1 --config=/etc/kubernetes/kubelet-config.yaml"
-          KUBELET_CERT=""
-    - path: /etc/kubernetes/proxy
-      mode: 0644
-      overwrite: true
-      contents:
-        inline: |
-          KUBE_PROXY_ARGS=""
     - path: /etc/kubernetes/kubeconfig.yaml
       mode: 0644
       overwrite: true
@@ -235,8 +183,6 @@ systemd:
 
         [Service]
         TimeoutStartSec=300
-        EnvironmentFile=/etc/kubernetes/common
-        EnvironmentFile=/etc/kubernetes/apiserver
         ExecStartPre=/usr/sbin/setenforce Permissive
         ExecStartPre=/bin/mkdir -p /etc/kubernetes/
         ExecStartPre=cp /sysroot/ostree/inject/tls/k8s-api-server/apiserver/crt /etc/kubernetes/apiserver.crt
@@ -250,7 +196,7 @@ systemd:
             --rm \
             --volume /usr/local/bin:/host/usr/local/bin \
             --entrypoint /bin/sh \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
             -c "cp /usr/local/bin/kubectl /host/usr/local/bin/kubectl"'
         ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-apiserver \
             --net host \
@@ -259,9 +205,17 @@ systemd:
             --volume /etc/ssl/certs:/etc/ssl/certs:ro \
             --volume /run:/run \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
             kube-apiserver \
-            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_ETCD_SERVERS $KUBE_API_CERT $KUBE_API_ADDRESS $KUBE_API_PORT $KUBELET_PORT $KUBE_SERVICE_ADDRESSES $KUBE_ADMISSION_CONTROL $KUBE_API_ARGS'
+            --etcd-servers=http://127.0.0.1:2379 \
+            --tls-private-key-file=/etc/kubernetes/apiserver.key --tls-cert-file=/etc/kubernetes/apiserver.crt --client-ca-file=/etc/kubernetes/ca.crt \
+            --insecure-bind-address=0.0.0.0 --insecure-port=8080 \
+            --service-cluster-ip-range=10.254.0.0/16 \
+            --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota \
+            --service-account-signing-key-file /etc/kubernetes/serviceaccount-key-private.pem \
+            --service-account-key-file /etc/kubernetes/serviceaccount-key-public.pem \
+            --service-account-issuer dummy \
+            --logtostderr=true --v=3'
         ExecStop=-/usr/bin/podman stop kube-apiserver
         Delegate=yes
         Restart=always
@@ -276,8 +230,6 @@ systemd:
         After=network-online.target load-images.service generate-k8s-sa-keys.service
         Wants=network-online.target load-images.service generate-k8s-sa-keys.service
         [Service]
-        EnvironmentFile=/etc/kubernetes/common
-        EnvironmentFile=/etc/kubernetes/controller-manager
         ExecStartPre=/bin/mkdir -p /etc/kubernetes/
         ExecStartPre=cp /sysroot/ostree/inject/tls/k8s-api-server/ca.crt /etc/kubernetes/ca.crt
         ExecStartPre=-/usr/bin/podman rm kube-controller-manager
@@ -288,10 +240,12 @@ systemd:
             --volume /etc/ssl/certs:/etc/ssl/certs:ro \
             --volume /run:/run \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
             kube-controller-manager \
             --secure-port=0 \
-            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_MASTER $KUBE_CONTROLLER_MANAGER_CERT $KUBE_CONTROLLER_MANAGER_ARGS'
+            --service-account-private-key-file /etc/kubernetes/serviceaccount-key-private.pem \
+            --client-ca-file=/etc/kubernetes/ca.crt --root-ca-file=/etc/kubernetes/ca.crt \
+            --logtostderr=true --v=3 --master=http://127.0.0.1:8080'
         ExecStop=-/usr/bin/podman stop kube-controller-manager
         Delegate=yes
         Restart=always
@@ -306,8 +260,6 @@ systemd:
         After=network-online.target load-images.service
         Wants=network-online.target load-images.service
         [Service]
-        EnvironmentFile=/etc/kubernetes/common
-        EnvironmentFile=/etc/kubernetes/scheduler
         ExecStartPre=/bin/mkdir -p /etc/kubernetes/
         ExecStartPre=-/usr/bin/podman rm kube-scheduler
         ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-scheduler \
@@ -317,9 +269,9 @@ systemd:
             --volume /etc/ssl/certs:/etc/ssl/certs:ro \
             --volume /run:/run \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
             kube-scheduler \
-            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_MASTER $KUBE_SCHEDULER_ARGS'
+            --logtostderr=true --v=3 --master=http://127.0.0.1:8080'
         ExecStop=-/usr/bin/podman stop kube-scheduler
         Delegate=yes
         Restart=always
@@ -336,8 +288,6 @@ systemd:
         After=network-online.target load-images.service
         Wants=network-online.target load-images.service
         [Service]
-        EnvironmentFile=/etc/kubernetes/common
-        EnvironmentFile=/etc/kubernetes/kubelet
         ExecStartPre=/bin/mkdir -p /etc/kubernetes/cni/net.d
         ExecStartPre=/bin/mkdir -p /etc/kubernetes/manifests
         ExecStartPre=/bin/mkdir -p /var/lib/calico
@@ -365,9 +315,12 @@ systemd:
             --volume /var/run:/var/run \
             --volume /var/run/lock:/var/run/lock:z \
             --volume /opt/cni/bin:/opt/cni/bin:z \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
             kubelet \
-            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBELET_CERT $KUBECONFIG $KUBELET_ADDRESS $KUBELET_PORT $KUBELET_HOSTNAME $KUBELET_ARGS'
+            --kubeconfig /etc/kubernetes/kubeconfig.yaml \
+            --pod-infra-container-image=registry.local:5000/pause-amd64:3.1 \
+            --config=/etc/kubernetes/kubelet-config.yaml \
+            --logtostderr=true --v=3'
         ExecStop=-/usr/bin/podman stop kubelet
         Delegate=yes
         Restart=always
@@ -383,8 +336,6 @@ systemd:
         After=network-online.target load-images.service
         Wants=network-online.target load-images.service
         [Service]
-        EnvironmentFile=/etc/kubernetes/common
-        EnvironmentFile=/etc/kubernetes/proxy
         ExecStartPre=/bin/mkdir -p /etc/kubernetes/
         ExecStartPre=-/usr/bin/podman rm kube-proxy
         ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-proxy \
@@ -398,9 +349,9 @@ systemd:
             --volume /sys/fs/cgroup/systemd:/sys/fs/cgroup/systemd \
             --volume /lib/modules:/lib/modules:ro \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG} \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
             kube-proxy \
-            $KUBE_LOGTOSTDERR $KUBE_LOG_LEVEL $KUBE_MASTER $KUBE_PROXY_ARGS'
+            --logtostderr=true --v=3 --master=http://127.0.0.1:8080'
         ExecStop=-/usr/bin/podman stop kube-proxy
         Delegate=yes
         Restart=always
