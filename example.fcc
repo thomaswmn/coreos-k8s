@@ -201,13 +201,13 @@ systemd:
         [Unit]
         Description=Run single node etcd
         After=network-online.target load-images.service
-        Wants=network-online.target
+        Wants=network-online.target load-images.service
+
 
         [Service]
         ExecStartPre=mkdir -p /var/lib/etcd
         ExecStartPre=-/bin/podman kill etcd
         ExecStartPre=-/bin/podman rm etcd
-        #ExecStartPre=-/bin/podman pull registry.local:5000/coreos/etcd:v3.3.20
         ExecStart=/bin/podman run --name etcd \
                 --volume /var/lib/etcd:/etcd-data:z \
                 --net=host \
@@ -231,6 +231,8 @@ systemd:
         [Unit]
         Description=kube-apiserver via Hyperkube
         After=network-online.target load-images.service generate-k8s-sa-keys.service
+        Wants=network-online.target load-images.service generate-k8s-sa-keys.service
+
         [Service]
         TimeoutStartSec=300
         EnvironmentFile=/etc/kubernetes/common
@@ -241,7 +243,6 @@ systemd:
         ExecStartPre=cp /sysroot/ostree/inject/tls/k8s-api-server/apiserver/key /etc/kubernetes/apiserver.key
         ExecStartPre=cp /sysroot/ostree/inject/tls/k8s-api-server/ca.crt /etc/kubernetes/ca.crt
         ExecStartPre=-/usr/bin/podman rm kube-apiserver
-        #ExecStartPre=-/bin/bash -c '/usr/bin/podman pull ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG}'
         ExecStartPre=-/bin/bash -c '/usr/bin/podman run --name kubectl-copy \
             --privileged \
             --user root \
@@ -273,6 +274,7 @@ systemd:
         [Unit]
         Description=kube-controller-manager via Hyperkube
         After=network-online.target load-images.service generate-k8s-sa-keys.service
+        Wants=network-online.target load-images.service generate-k8s-sa-keys.service
         [Service]
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/controller-manager
@@ -302,6 +304,7 @@ systemd:
         [Unit]
         Description=kube-scheduler via Hyperkube
         After=network-online.target load-images.service
+        Wants=network-online.target load-images.service
         [Service]
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/scheduler
@@ -331,6 +334,7 @@ systemd:
         [Unit]
         Description=Kubelet via Hyperkube (System Container)
         After=network-online.target load-images.service
+        Wants=network-online.target load-images.service
         [Service]
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/kubelet
@@ -377,6 +381,7 @@ systemd:
         [Unit]
         Description=kube-proxy via Hyperkube
         After=network-online.target load-images.service
+        Wants=network-online.target load-images.service
         [Service]
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/proxy
