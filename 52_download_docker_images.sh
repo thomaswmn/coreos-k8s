@@ -60,5 +60,5 @@ mv blob/docker-images/registry.local_5000_registry* blob/docker-images/images/do
 mv blob/docker-images/registry.local_5000_kubernetesui* blob/docker-images/images/docker
 mv blob/docker-images/registry.local_5000_alpine* blob/docker-images/images/docker
 
-
-image-builder/build-image.sh
+echo "starting compressing images with xz..."
+find blob/docker-images/images -type f -name "*.tar" -exec xz -3 {} \;

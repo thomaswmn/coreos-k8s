@@ -34,27 +34,6 @@ storage:
           ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
           10.0.2.1    registry.bootstrap.local
           10.0.2.10   master.k8s.local registry.local
-    - path: /etc/docker/certs.d/registry.local:5000/ca.crt
-      mode: 0644
-      overwrite: true
-      contents:
-        source: {{CA_REGISTRY}}
-    - path: /usr/local/bin/load-images.sh
-      mode: 0755
-      overwrite: true
-      contents:
-        inline: |
-          #!/bin/bash
-          set -e
-          mkdir /mnt/images
-          mount /dev/vdb /mnt/images
-          for file in /mnt/images/podman/*; do
-            podman load --input $file
-          done
-          for file in /mnt/images/docker/*; do
-            docker load --input $file
-          done
-          umount /mnt/images
     - path: /etc/kubernetes/common
       mode: 0644
       overwrite: true
@@ -118,21 +97,6 @@ storage:
           - cluster:
               name: coreos-cluster
               server: http://127.0.0.1:8080
-    - path: /etc/kubernetes/ca.crt
-      mode: 0644
-      overwrite: true
-      contents:
-        source: {{K8S_CA_CRT}}
-    - path: /etc/kubernetes/apiserver.crt
-      mode: 0644
-      overwrite: true
-      contents:
-        source: {{K8S_APISERVER_CRT}}
-    - path: /etc/kubernetes/apiserver.key
-      mode: 0644
-      overwrite: true
-      contents:
-        source: {{K8S_APISERVER_KEY}}
     - path: /etc/kubernetes/kubelet-config.yaml
       mode: 0644
       overwrite: true
@@ -154,35 +118,6 @@ storage:
           authorization:
             mode: AlwaysAllow # Deafults to webhook as of 1.10
           readOnlyPort: 10255 # Used by heapster. Defaults to 0 (disabled) as of 1.10. Needed for metrics.
-    - path: /etc/kubernetes/deployments.tar.xz
-      mode: 0644
-      overwrite: true
-      contents:
-        source: {{K8S_DEPLOYMENTS_TAR_XZ}}
-    - path: /usr/local/bin/apply-deployments.sh
-      mode: 0755
-      overwrite: true
-      contents:
-        inline: |
-          #!/bin/bash
-          set -e
-          if [ ! -d /etc/kubernetes/deployments ]; then
-            mkdir -p /etc/kubernetes/deployments
-            cd /etc/kubernetes/deployments
-            tar -xJf ../deployments.tar.xz
-          fi
-          export KUBERNETES_MASTER=http://127.0.0.1:8080
-          kubectl apply -f /etc/kubernetes/deployments
-    - path: /usr/local/bin/push-local-images.sh
-      mode: 0755
-      overwrite: true
-      contents:
-        inline: |
-          #!/bin/bash
-          set -e
-          docker image ls | grep -v REPOSITORY | while read image tag others ; do
-            docker push $image:$tag
-          done
     - path: /etc/fedora-coreos-pinger/config.d/99-disable-reporting.toml
       mode: 0644
       overwrite: true
@@ -192,7 +127,23 @@ storage:
           enabled = false
   links:
     - path: /etc/docker/certs.d/registry.bootstrap.local:5000
-      target: /etc/docker/certs.d/registry.local:5000
+      target: /sysroot/ostree/inject/tls/docker-registry/ca.crt
+      overwrite: true
+      hard: false
+    - path: /etc/docker/certs.d/registry.local:5000/ca.crt
+      target: /sysroot/ostree/inject/tls/docker-registry/ca.crt
+      overwrite: true
+      hard: false
+    - path: /usr/local/bin/load-images.sh
+      target: /sysroot/ostree/inject/scripts/load-images.sh
+      overwrite: true
+      hard: false
+    - path: /usr/local/bin/apply-deployments.sh
+      target: /sysroot/ostree/inject/scripts/apply-deployments.sh
+      overwrite: true
+      hard: false
+    - path: /usr/local/bin/push-local-images.sh
+      target: /sysroot/ostree/inject/scripts/push-local-images.sh
       overwrite: true
       hard: false
 
@@ -218,12 +169,13 @@ systemd:
       contents: |
         [Unit]
         Description=load local podman and docker images
-        After=network-online.target docker.socket
+        After=network-online.target docker.socket ignition-firstboot-complete.service
         Wants=network-online.target
 
         [Service]
         Type=oneshot
         RemainAfterExit=true
+        ExecStartPre=/usr/sbin/setenforce Permissive
         ExecStart=/usr/local/bin/load-images.sh
 
         [Install]
@@ -285,6 +237,9 @@ systemd:
         EnvironmentFile=/etc/kubernetes/apiserver
         ExecStartPre=/usr/sbin/setenforce Permissive
         ExecStartPre=/bin/mkdir -p /etc/kubernetes/
+        ExecStartPre=cp /sysroot/ostree/inject/tls/k8s-api-server/apiserver/crt /etc/kubernetes/apiserver.crt
+        ExecStartPre=cp /sysroot/ostree/inject/tls/k8s-api-server/apiserver/key /etc/kubernetes/apiserver.key
+        ExecStartPre=cp /sysroot/ostree/inject/tls/k8s-api-server/ca.crt /etc/kubernetes/ca.crt
         ExecStartPre=-/usr/bin/podman rm kube-apiserver
         #ExecStartPre=-/bin/bash -c '/usr/bin/podman pull ${CONTAINER_INFRA_PREFIX:-k8s.gcr.io/}hyperkube-amd64:${KUBE_TAG}'
         ExecStartPre=-/bin/bash -c '/usr/bin/podman run --name kubectl-copy \
@@ -322,6 +277,7 @@ systemd:
         EnvironmentFile=/etc/kubernetes/common
         EnvironmentFile=/etc/kubernetes/controller-manager
         ExecStartPre=/bin/mkdir -p /etc/kubernetes/
+        ExecStartPre=cp /sysroot/ostree/inject/tls/k8s-api-server/ca.crt /etc/kubernetes/ca.crt
         ExecStartPre=-/usr/bin/podman rm kube-controller-manager
         ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-controller-manager \
             --net host \

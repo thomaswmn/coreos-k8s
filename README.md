@@ -6,11 +6,12 @@ comes with the ability to execute containers via Docker and Podman. However, it
 naturally does not come with Kubernetes. Here, we configure CoreOS such that it 
 becomes a Kubernetes cluster after boot.
 
-The setup consist of an unmodified CoreOS image, an Iginition config file, and
-a second disk image holding all the container images required to start up the
-Kubernetes cluster. In addition, this git repo contains a collection of scripts
-required to download the relevant blobs from the Internet, and to configure all
-pieces to fit together.
+The setup consist of a CoreOS disk image, where some additional files are 
+injected, and an Iginition config file. Among the files injected into the CoreOS
+image are the ontainer images required to start up the Kubernetes cluster. 
+
+This git repo contains a collection of scripts required to download the 
+relevant blobs from the Internet, and to configure all pieces to fit together.
 
 The setup currently creates a single-node Kubernetes cluster, only. Adding 
 further nodes is planned, based on a simplified version of the config used for
@@ -24,7 +25,7 @@ The overall system adheres to the following design principles.
 * Stateless - the setup does not preserve any state across reboots.  
   All configuration is loaded at boot time via the CoreOS Ignition mechanism.
   On each reboot, the cluster looks the same. In case of a miss-configuration,
-  just reboot!
+  just reboot.
 
 * Offline - the setup is intended to run without Internet connectivity.  
   Downloading the same Docker images from an external registry at every startup
@@ -44,11 +45,12 @@ following paragraphs.
 
 ### Directories
 * bin - for tools required to prepare the environment
+* blob - blobs ownloaded from the internet, also the modified CoreOS qcow image
+* deployments - k8s deployment yaml files, generated from deployments-builder
 * deployments-builder - environment to create deployment yaml files (e.g. from
   templates)
-* deployments - deployment yaml files, generated from deployments-builder
-* image-builder - resources to create the disk image containing all container
-  images required by the setup
+* qcow-image-builder - resources to inject files into the qcow disk image 
+* target-scripts - scripts that get linked to /usr/local/bin
 * tls - to manage various keys and certificates required for the system
 
 ### Scripts
@@ -69,7 +71,8 @@ named by numbers. These numbers denote a loose grouping and ordering.
 * 10_compile_ignition.sh - take the input ".fcc" file, some input from the tls
   directory, and compile the Ignition configuration file that is finally loaded
   on boot of the system
-* 11_run_qemu.sh - start the qemu VM to test the setup
+* 11_prepare_qcow_image.sh - patch qcow imgage to contain all required data
+* 12_run_qemu.sh - start the qemu VM to test the setup
 
 * 51_download_coreos_image.sh - download the latest stable CoreOS image
 * 52_download_docker_images.sh - download the required container images and 
@@ -110,7 +113,6 @@ contributors.
 * Kubernetes, etcd, Kubernetes-Dashboard
 * Docker
 * Openssl
-* Alpine
-* Squashfs
+* guestfish
 * The template rendering engine "mo" is used to replace variables inside the 
   configuration file, before compiling the Ignition file.
