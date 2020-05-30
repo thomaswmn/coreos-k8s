@@ -30,9 +30,9 @@ storage:
       overwrite: true
       contents:
         inline: |
-          127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+          127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 registry.local
           ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
-          10.0.2.10   master.k8s.local registry.local
+          10.0.2.10   master.k8s.local
     - path: /etc/kubernetes/kubeconfig.yaml
       mode: 0644
       overwrite: true
