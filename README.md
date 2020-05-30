@@ -86,6 +86,18 @@ executed before the ignition file can be compiled. For further information,
 check the scripts used to generate the certificates, and the places where
 they are referenced.
 
+## How To Start
+
+* check scripts 01 and 02, adapt to your local requirements, and execute
+* check scripts 51, 52, and 53, adapt if required and execute
+* edit example.fcc, insert your own ssh public key
+* execute script 10 to compile config file
+* execute script 11 to patch qcow disk image
+* execute script 12 to boot in local qemu
+* give it some time to start all k8s services
+* check the nodes are available in k8s --> KUBERNETES_MASTER=http://10.0.2.10:8080 kubectl get nodes
+* check the pods are available in k8s --> KUBERNETES_MASTER=http://10.0.2.10:8080 kubectl get pods -A
+
 ## TODOs
 This is an experimental test setup, mostly intended to check whether this is 
 feasible. There was no intention yet to make the system stable, reliable, 
