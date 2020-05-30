@@ -25,5 +25,5 @@ export K8S_DEPLOYMENTS_TAR_XZ="data:;base64,"$(tar -cJf - -C deployments/ ./ | b
 
 cat example.fcc \
   | mo \
-  | docker run -i --rm quay.io/coreos/fcct:release --pretty --strict \
+  | docker run -i --rm quay.io/coreos/fcct:release --strict \
   > example.ign
