@@ -23,5 +23,5 @@ fi
 
 
 unxz $(basename $url)
-rm -f fedora-coreos-qemu.qcow2
-ln -s $(basename $url .xz) fedora-coreos-qemu.qcow2
+rm -f fedora-coreos-qemu.qcow2.orig
+ln -s $(basename $url .xz) fedora-coreos-qemu.qcow2.orig
