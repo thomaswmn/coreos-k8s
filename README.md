@@ -96,8 +96,7 @@ Actual list of TODOs, where I collect things I plan to do
   better to re-enable it
 * define a clear concept which configs to hard-code in the fcc file and which 
   to insert via mo
-* same for config files - could use directory with configs instead of inlining 
-  them in the examle.fcc
+* add support for IPs via DHCP (currently, master IP is hard-coded)
 * and many others
 
 ## External Tools Used
