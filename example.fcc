@@ -32,7 +32,6 @@ storage:
         inline: |
           127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
           ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
-          10.0.2.1    registry.bootstrap.local
           10.0.2.10   master.k8s.local registry.local
     - path: /etc/kubernetes/kubeconfig.yaml
       mode: 0644
@@ -74,10 +73,6 @@ storage:
           [reporting]
           enabled = false
   links:
-    - path: /etc/docker/certs.d/registry.bootstrap.local:5000
-      target: /sysroot/ostree/inject/tls/docker-registry/ca.crt
-      overwrite: true
-      hard: false
     - path: /etc/docker/certs.d/registry.local:5000/ca.crt
       target: /sysroot/ostree/inject/tls/docker-registry/ca.crt
       overwrite: true
