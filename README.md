@@ -108,7 +108,10 @@ Actual list of TODOs, where I collect things I plan to do
   better to re-enable it
 * define a clear concept which configs to hard-code in the fcc file and which 
   to insert via mo
-* add support for IPs via DHCP (currently, master IP is hard-coded)
+* add support for IPs via DHCP (currently, master IP is hard-coded in example.fcc and some TLS certificates)
+  * remove file /etc/NetworkManager/system-connections/eth0.nmconnection from example.fcc
+  * remove line in /etc/hosts in example.fcc
+  * check certificates for docker registry and kube-apiserver
 * and many others
 
 ## External Tools Used
