@@ -1,0 +1,163 @@
+variant: fcos
+version: 1.0.0
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDGmc4+phRU8Q5KDjYY4+LXYZfISlimzQhZ2Bp9KM1baA4EPO9I9Y3wBlWkBAeRBzMHc7r5pzuicM0mLvLXS9ZBa8L5G7mIm9kF2Tmfy/h9LFRXe7VV8WHpoJX4QaE0UarRAUneNBOVL54NJVhk3/75xO7fCB1kmCMpjJLU6DJv0LBT7k679aPakTeijJu/H81xZkjxumAOJvpDWgo07tVlat5tbVpMhDgj0/qw/wC6IZUBtfNvL6FDI6Tb6PUVFfEmi5V5XLo4favZWuRTvcFR6aDCe7TS2yh1oEg9Ib4rPYZgAf/100eicVz2VbzSXo67rhW6cHLawxOCNd+5YQdn thomas@atom
+storage:
+  files:
+    - path: /etc/NetworkManager/system-connections/eth0.nmconnection
+      mode: 0600
+      overwrite: true
+      contents:
+        inline: |
+          [connection]
+          type=ethernet
+          interface-name=eth0
+
+          [ethernet]
+          mac-address=00:CE:30:74:A1:89
+
+          [ipv4]
+          method=manual
+          addresses=10.0.2.20/24
+          gateway=10.0.2.1
+          dns=1.1.1.1;8.8.8.8
+          dns-search=redhat.com
+    - path: /etc/hosts
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 registry.local
+          ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+          10.0.2.10   master.k8s.local
+          10.0.2.20   worker1.k8s.local
+    - path: /etc/kubernetes/kubeconfig.yaml
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          apiVersion: v1
+          kind: Config
+          clusters:
+          - cluster:
+              name: coreos-cluster
+              server: http://master.k8s.local:8080
+    - path: /etc/kubernetes/kubelet-config.yaml
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          apiVersion: kubelet.config.k8s.io/v1beta1
+          kind: KubeletConfiguration
+          clusterDNS: ["10.99.1.2"]
+          clusterDomain: cluster.local
+          staticPodPath: /etc/kubernetes/manifests
+          port: 10250
+          cgroupDriver: systemd
+          # Restore default authentication and authorization modes from K8s < 1.9
+          authentication:
+            anonymous:
+              enabled: true # Defaults to false as of 1.10
+            webhook:
+              enabled: false # Deafults to true as of 1.10
+          authorization:
+            mode: AlwaysAllow # Deafults to webhook as of 1.10
+          readOnlyPort: 10255 # Used by heapster. Defaults to 0 (disabled) as of 1.10. Needed for metrics.
+    - path: /etc/fedora-coreos-pinger/config.d/99-disable-reporting.toml
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: |
+          [reporting]
+          enabled = false
+  links:
+    - path: /etc/docker/certs.d/registry.local:5000/ca.crt
+      target: /sysroot/ostree/inject/tls/docker-registry/ca.crt
+      overwrite: true
+      hard: false
+
+systemd:
+  units:
+    - name: zincati.service
+      mask: true
+    - name: kubelet.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Kubelet via Hyperkube (System Container)
+        After=network-online.target load-images.service
+        Wants=network-online.target load-images.service
+        [Service]
+        ExecStartPre=/bin/mkdir -p /etc/kubernetes/cni/net.d
+        ExecStartPre=/bin/mkdir -p /etc/kubernetes/manifests
+        ExecStartPre=/bin/mkdir -p /var/lib/calico
+        ExecStartPre=/bin/mkdir -p /var/lib/docker
+        ExecStartPre=/bin/mkdir -p /var/lib/kubelet/volumeplugins
+        ExecStartPre=/bin/mkdir -p /opt/cni/bin
+        ExecStartPre=-/usr/bin/podman rm kubelet
+        ExecStart=/bin/bash -c '/usr/bin/podman run --name kubelet \
+            --privileged \
+            --pid host \
+            --network host \
+            --volume /etc/cni/net.d:/etc/cni/net.d:ro,z \
+            --volume /etc/kubernetes:/etc/kubernetes:ro,z \
+            --volume /usr/lib/os-release:/etc/os-release:ro \
+            --volume /etc/ssl/certs:/etc/ssl/certs:ro \
+            --volume /lib/modules:/lib/modules:ro \
+            --volume /run:/run \
+            --volume /sys/fs/cgroup:/sys/fs/cgroup:ro \
+            --volume /sys/fs/cgroup/systemd:/sys/fs/cgroup/systemd \
+            --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
+            --volume /var/lib/calico:/var/lib/calico \
+            --volume /var/lib/docker:/var/lib/docker \
+            --volume /var/lib/kubelet:/var/lib/kubelet:rshared,z \
+            --volume /var/log:/var/log \
+            --volume /var/run:/var/run \
+            --volume /var/run/lock:/var/run/lock:z \
+            --volume /opt/cni/bin:/opt/cni/bin:z \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            kubelet \
+            --kubeconfig /etc/kubernetes/kubeconfig.yaml \
+            --pod-infra-container-image=registry.local:5000/pause-amd64:3.1 \
+            --config=/etc/kubernetes/kubelet-config.yaml \
+            --logtostderr=true --v=3'
+        ExecStop=-/usr/bin/podman stop kubelet
+        Delegate=yes
+        Restart=always
+        RestartSec=10
+        [Install]
+        WantedBy=multi-user.target
+        
+    - name: kube-proxy.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=kube-proxy via Hyperkube
+        After=network-online.target load-images.service
+        Wants=network-online.target load-images.service
+        [Service]
+        ExecStartPre=/bin/mkdir -p /etc/kubernetes/
+        ExecStartPre=-/usr/bin/podman rm kube-proxy
+        ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-proxy \
+            --privileged \
+            --net host \
+            --volume /etc/kubernetes:/etc/kubernetes:ro,z \
+            --volume /usr/lib/os-release:/etc/os-release:ro \
+            --volume /etc/ssl/certs:/etc/ssl/certs:ro \
+            --volume /run:/run \
+            --volume /sys/fs/cgroup:/sys/fs/cgroup:ro \
+            --volume /sys/fs/cgroup/systemd:/sys/fs/cgroup/systemd \
+            --volume /lib/modules:/lib/modules:ro \
+            --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            kube-proxy \
+            --logtostderr=true --v=3 --master=http://master.k8s.local:8080'
+        ExecStop=-/usr/bin/podman stop kube-proxy
+        Delegate=yes
+        Restart=always
+        RestartSec=10
+        [Install]
+        WantedBy=multi-user.target
