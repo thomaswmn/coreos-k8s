@@ -209,7 +209,7 @@ systemd:
             --rm \
             --volume /usr/local/bin:/host/usr/local/bin \
             --entrypoint /bin/sh \
-            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.6 \
             -c "cp /usr/local/bin/kubectl /host/usr/local/bin/kubectl"'
         ExecStart=/bin/bash -c '/usr/bin/podman run --name kube-apiserver \
             --net host \
@@ -218,7 +218,7 @@ systemd:
             --volume /etc/ssl/certs:/etc/ssl/certs:ro \
             --volume /run:/run \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.6 \
             kube-apiserver \
             --etcd-servers=http://127.0.0.1:2379 \
             --tls-private-key-file=/etc/kubernetes/apiserver.key --tls-cert-file=/etc/kubernetes/apiserver.crt --client-ca-file=/etc/kubernetes/ca.crt \
@@ -253,7 +253,7 @@ systemd:
             --volume /etc/ssl/certs:/etc/ssl/certs:ro \
             --volume /run:/run \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.6 \
             kube-controller-manager \
             --secure-port=0 \
             --service-account-private-key-file /etc/kubernetes/serviceaccount-key-private.pem \
@@ -282,7 +282,7 @@ systemd:
             --volume /etc/ssl/certs:/etc/ssl/certs:ro \
             --volume /run:/run \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.6 \
             kube-scheduler \
             --logtostderr=true --v=3 --master=http://master.k8s.local:8080'
         ExecStop=-/usr/bin/podman stop kube-scheduler
@@ -328,7 +328,7 @@ systemd:
             --volume /var/run:/var/run \
             --volume /var/run/lock:/var/run/lock:z \
             --volume /opt/cni/bin:/opt/cni/bin:z \
-            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.6 \
             kubelet \
             --kubeconfig /etc/kubernetes/kubeconfig.yaml \
             --pod-infra-container-image=registry.local:5000/pause-amd64:3.1 \
@@ -362,7 +362,7 @@ systemd:
             --volume /sys/fs/cgroup/systemd:/sys/fs/cgroup/systemd \
             --volume /lib/modules:/lib/modules:ro \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.6 \
             kube-proxy \
             --logtostderr=true --v=3 --master=http://master.k8s.local:8080'
         ExecStop=-/usr/bin/podman stop kube-proxy
