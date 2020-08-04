@@ -125,6 +125,22 @@ systemd:
 
         [Install]
         WantedBy=multi-user.target
+    - name: push-images.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=push local docker images into docker registry
+        After=network-online.target docker.socket ignition-firstboot-complete.service load-k8s-default.service
+        Wants=network-online.target
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStartPre=/usr/sbin/setenforce Permissive
+        ExecStart=/bin/bash -c '( while sleep 5; do /usr/local/bin/push-local-images.sh && exit; done ) &'
+
+        [Install]
+        WantedBy=multi-user.target
     - name: load-k8s-default.service
       enabled: true
       contents: |
