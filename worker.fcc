@@ -118,7 +118,7 @@ systemd:
             --volume /var/run:/var/run \
             --volume /var/run/lock:/var/run/lock:z \
             --volume /opt/cni/bin:/opt/cni/bin:z \
-            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.6 \
             kubelet \
             --kubeconfig /etc/kubernetes/kubeconfig.yaml \
             --pod-infra-container-image=registry.local:5000/pause-amd64:3.1 \
@@ -152,7 +152,7 @@ systemd:
             --volume /sys/fs/cgroup/systemd:/sys/fs/cgroup/systemd \
             --volume /lib/modules:/lib/modules:ro \
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
-            registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
+            registry.local:5000/google-containers/hyperkube-amd64:v1.18.6 \
             kube-proxy \
             --logtostderr=true --v=3 --master=http://master.k8s.local:8080'
         ExecStop=-/usr/bin/podman stop kube-proxy
