@@ -17,9 +17,16 @@
 #  | docker run -i --rm quay.io/coreos/fcct:release --strict \
 #  > example.ign
 
-cat example.fcc \
-  | docker run -i --rm quay.io/coreos/fcct:release --strict \
-  > example.ign
+scripts="master worker"
 
-echo "size of final script is $(wc -c example.ign | cut -d' ' -f1) bytes"
+for script in $scripts; do
+  cat $script.fcc \
+    | docker run -i --rm quay.io/coreos/fcct:release --strict \
+    > $script.ign
+done
+
+
+for script in $scripts; do
+  echo "size of final script $script.ign is $(wc -c $script.ign | cut -d' ' -f1) bytes"
+done
 
