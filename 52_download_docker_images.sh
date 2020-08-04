@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 K8S_VERSION="v1.18.6"
-ETCD_VERSION="v3.3.23"
+ETCD_VERSION="v3.3.20"
 FLANNEL_VERSION="v0.12.0"
 
 REGISTRY_BOOTSTRAP=registry.bootstrap.local:5000
