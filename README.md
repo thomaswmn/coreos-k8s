@@ -134,4 +134,12 @@ contributors.
 
 from https://coreos.com/os/docs/latest/clc-examples.html
 
-python -c "import crypt,random,string; print(crypt.crypt(input('clear-text password: '), '\$6\$' + ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(16)])))"
+openssl passwd -1
+
+then add to fcc file like this:
+
+passwd:
+  users:
+    - name: core
+      password_hash: "$1$..."
+
