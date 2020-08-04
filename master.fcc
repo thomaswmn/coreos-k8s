@@ -15,7 +15,7 @@ storage:
         inline: |
           [connection]
           type=ethernet
-          interface-name=eth0
+          interface-name=ens3
 
           [ethernet]
           mac-address=00:CE:30:74:A1:89
