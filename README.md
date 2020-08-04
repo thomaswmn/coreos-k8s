@@ -126,3 +126,12 @@ contributors.
 * guestfish
 * The template rendering engine "mo" is used to replace variables inside the 
   configuration file, before compiling the Ignition file.
+
+
+## Debugging
+
+### Create password for core user
+
+from https://coreos.com/os/docs/latest/clc-examples.html
+
+python -c "import crypt,random,string; print(crypt.crypt(input('clear-text password: '), '\$6\$' + ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(16)])))"
