@@ -45,7 +45,7 @@ storage:
           clusters:
           - cluster:
               name: coreos-cluster
-              server: http://127.0.0.1:8080
+              server: http://master.k8s.local:8080
     - path: /etc/kubernetes/kubelet-config.yaml
       mode: 0644
       overwrite: true
@@ -258,7 +258,7 @@ systemd:
             --secure-port=0 \
             --service-account-private-key-file /etc/kubernetes/serviceaccount-key-private.pem \
             --client-ca-file=/etc/kubernetes/ca.crt --root-ca-file=/etc/kubernetes/ca.crt \
-            --logtostderr=true --v=3 --master=http://127.0.0.1:8080'
+            --logtostderr=true --v=3 --master=http://master.k8s.local:8080'
         ExecStop=-/usr/bin/podman stop kube-controller-manager
         Delegate=yes
         Restart=always
@@ -284,7 +284,7 @@ systemd:
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
             registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
             kube-scheduler \
-            --logtostderr=true --v=3 --master=http://127.0.0.1:8080'
+            --logtostderr=true --v=3 --master=http://master.k8s.local:8080'
         ExecStop=-/usr/bin/podman stop kube-scheduler
         Delegate=yes
         Restart=always
@@ -364,7 +364,7 @@ systemd:
             --volume /etc/pki/tls/certs:/usr/share/ca-certificates:ro \
             registry.local:5000/google-containers/hyperkube-amd64:v1.18.2 \
             kube-proxy \
-            --logtostderr=true --v=3 --master=http://127.0.0.1:8080'
+            --logtostderr=true --v=3 --master=http://master.k8s.local:8080'
         ExecStop=-/usr/bin/podman stop kube-proxy
         Delegate=yes
         Restart=always
