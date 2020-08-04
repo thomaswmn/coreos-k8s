@@ -33,7 +33,7 @@ all_docker_images_o="$odockerimg_hyperkube $odockerimg_flannel $odockerimg_etcd 
 
 
 mkdir -p blob/docker-images
-rm -f blob/docker-images/*
+rm -fr blob/docker-images/*
 
 for img in $all_docker_images_o; do
   myimg_m=$(dockerimg_master $img)
