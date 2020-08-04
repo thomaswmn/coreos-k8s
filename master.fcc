@@ -3,6 +3,7 @@ version: 1.0.0
 passwd:
   users:
     - name: core
+      password_hash: $6$o2cgyQprGmfJyQEY$tnUmyEJh8y9KeYdyRnORMq4a20g2TNuc3cAVjWKmIEQBGJYr3jfTF6DYFjeAZ2/WdRbcweABEOlUOD9m5k6hX/
       ssh_authorized_keys:
         - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDGmc4+phRU8Q5KDjYY4+LXYZfISlimzQhZ2Bp9KM1baA4EPO9I9Y3wBlWkBAeRBzMHc7r5pzuicM0mLvLXS9ZBa8L5G7mIm9kF2Tmfy/h9LFRXe7VV8WHpoJX4QaE0UarRAUneNBOVL54NJVhk3/75xO7fCB1kmCMpjJLU6DJv0LBT7k679aPakTeijJu/H81xZkjxumAOJvpDWgo07tVlat5tbVpMhDgj0/qw/wC6IZUBtfNvL6FDI6Tb6PUVFfEmi5V5XLo4favZWuRTvcFR6aDCe7TS2yh1oEg9Ib4rPYZgAf/100eicVz2VbzSXo67rhW6cHLawxOCNd+5YQdn thomas@atom
 storage:
